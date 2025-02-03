@@ -1,3 +1,86 @@
 from django.db import models
+from django.conf import settings
+from PIL import Image
+import os
 
 # Create your models here.
+"""
+    Produto:
+        Produto:
+            nome - Char
+            descricao_curta - Text
+            descricao_longa - Text
+            imagem - Image
+            slug - Slug
+            preco_marketing - Float
+            preco_marketing_promocional - Float
+            tipo - Choices
+                ('V', 'Variável'),
+                ('S', 'Simples'),
+"""
+class Produto(models.Model):
+    nome = models.CharField(max_length=255)
+    descricao_curta =models.TextField(max_length=255)
+    escricao_longa = models.TextField()
+    imagem = models.ImageField(
+        upload_to='produtos_imagens/%Y/%m', blank=True, null=True
+        )
+    slug = models.SlugField(unique=True)
+    preco_marketing = models.FloatField()
+    preco_marketing_promocional =models.FloatField(default=0)
+    tipo = models.CharField(
+        default='V', 
+        max_length=1,
+        choices=(
+            ('V', 'Variação'),
+            ('S', 'Simples'),
+        )
+    )
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        max_image_size= 800
+
+        if self.imagem:
+            self.resize_image(self.imagem, max_image_size)
+    
+    @staticmethod
+    def resize_image(imagem, new_width = 800):
+        img_full_path = os.path.join(settings.MEDIA_ROOT, imagem.name)
+        img_pil = Image.open(img_full_path)
+        original_width, original_height = img_pil.size
+        if original_width > new_width:
+            new_height =round((new_width * original_height) / original_width)
+            new_img = img_pil.resize((new_width,new_height), Image.LANCZOS)
+            new_img.save(img_full_path, optimize=True, quality=50)
+        else:
+            img_pil.close()
+            return
+        
+    
+    def __str__(self):
+        return self.nome
+
+"""
+        Variacao:
+            nome - char
+            produto - FK Produto
+            preco - Float
+            preco_promocional - Float
+            estoque - Int
+"""
+
+class Variacao(models.Model):
+    Produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
+    nome = models.CharField(max_length=65, blank=True, null= True)
+    preco = models.FloatField()
+    preco_promocional = models.FloatField(default=0)
+    estoque = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        verbose_name = 'Variação'
+        verbose_name_plural = 'Variações'
+        
+    def __str__(self):
+        return self.nome or self.Produto.nome
+    
