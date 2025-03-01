@@ -1,6 +1,6 @@
 {% extends "static/base.html" %}
 {% load crispy_forms_tags %}
-
+{% block titulo %}Criar Perfil | {% endblock titulo %}
 {% block conteudo %}
 <div class="row">
     {% if not request.user.is_authenticated %}
